@@ -18,7 +18,12 @@ module Campfire
     def login(&block)
       config = Config.new
       block.call(config)
-      @campfire = Tinder::Campfire.new(config.subdomain, login_credentials(config)).find_room_by_name(config.room)
+      
+      opts = login_credentials(config)
+      
+      opts.merge!(ssl_options(config))
+      
+      @campfire = Tinder::Campfire.new(config.subdomain, opts).find_room_by_name(config.room)
     end
 
     def start
@@ -49,11 +54,15 @@ module Campfire
       end
     end
 
+    def ssl_options(config)
+      { :ssl => config.ssl, :ssl_verify => config.ssl_verify }.delete_if {|k, v| v.nil? }
+    end
+
     def find_event(command)
       @events.find {|event| command.match(event.regex) }
     end
   end
 
   class Event < Struct.new(:regex, :action); end
-  class Config < Struct.new(:username, :password, :subdomain, :room, :token); end
+  class Config < Struct.new(:username, :password, :subdomain, :room, :token, :ssl, :ssl_verify); end
 end
